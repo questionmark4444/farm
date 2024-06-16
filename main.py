@@ -1,0 +1,114 @@
+def titlescreen():
+    """ this is for the user to prepare for the game after the user gives the input enter to continue or q to exit """
+
+    # texture for background of titlescreen
+    background = pygame.image.load("titlescreen.png")
+
+    # text telling the user what they can do
+    font = pygame.font.SysFont('Arial', 50)
+    text = font.render('press enter to play or press q to exit', True, (0, 125, 0))
+    # textbox where the text goes
+    textbox = text.get_rect()
+    textbox.center = (500, 500)
+
+    # loop waiting for the user to press enter or q
+    waiting = True
+    while waiting:
+        # this checks if the user has pressed either button
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    # this closes the game
+                    sys.exit()
+                if event.key == pygame.K_RETURN:
+                    # this exits the loop after this iteration is complete
+                    waiting = False
+
+        # this adds the background and textbox to the display then updates it
+        screen.blit(background, (0, 0))
+        screen.blit(text, textbox)
+        pygame.display.update()
+
+        # simple delay that likely wont bother users when they choose what to do
+        time.sleep(1)
+
+
+# imports libraries
+import sys
+import time
+import pygame
+
+# starts pygame modules
+pygame.init()
+# starts playing the background music
+pygame.mixer.music.load("music.mp3")
+pygame.mixer.music.play(-1, 0.0)
+
+# the display for the game, i decided to make it a global variable since anything that needs to be displayed will change it
+global screen
+screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
+
+# this is the tool the user is currently using, (reminder to expand later)
+global inhand
+
+# displays the game's titlescreen
+titlescreen()
+
+# debug
+font = pygame.font.SysFont('Arial', 50)
+text = font.render('press enter to play or press q to exit', True, (0, 125, 0))
+textbox = text.get_rect()
+textbox.center = (500, 500)
+
+while True:
+    """main game loop"""
+
+    # checks if the user has pressed q
+    events = pygame.event.get()
+    for event in events:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_q:
+                sys.exit()
+
+    # displays the background for the field
+    background = pygame.image.load("field.png")
+    screen.blit(background, (0, 0))
+
+    normal_tile_colour = (164, 83, 38)
+    touching_mouse_tile_colour = (204, 124, 38)
+
+    # creates the tiles of the field
+    y = 0
+    while y < 4:
+        # y position of tile
+        # every iteration the tiles are placed 150 pixels down from the previous iteration of tiles
+        tiley = 500 + 130 * y
+
+        x = 0
+        while x < 8:
+            # x position of tile
+            # every iteration the tile is placed 150 pixels right from the previous one
+            tilex = 230 + 130 * x
+
+            # tile appearence to display
+            tile = pygame.Rect(tilex, tiley, 100, 100)
+
+            # gets mouse location
+            (mousex, mousey) = pygame.mouse.get_pos()
+
+            # check if tile is touching mouse, if it is use the brighter colour
+            if (tilex < mousex < tilex + 100) and (tiley < mousey < tiley + 100):
+                pygame.draw.rect(screen, touching_mouse_tile_colour, tile)
+            else:
+                pygame.draw.rect(screen, normal_tile_colour, tile)
+
+            # next iteration of inner loop
+            x += 1
+        
+        # next iteration of outer loop
+        y += 1
+
+    # updates the display and a small delay so that the game mechanics dont go so fast
+    pygame.display.update()
+    time.sleep(0.05)
