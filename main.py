@@ -49,17 +49,13 @@ pygame.mixer.music.play(-1, 0.0)
 global screen
 screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
 
-# this is the tool the user is currently using, (reminder to expand later)
-global inhand
-
 # displays the game's titlescreen
 titlescreen()
 
-# debug
-font = pygame.font.SysFont('Arial', 50)
-text = font.render('press enter to play or press q to exit', True, (0, 125, 0))
-textbox = text.get_rect()
-textbox.center = (500, 500)
+# variables for use in game
+background = pygame.image.load("field.png")  # background for game
+normal_tile_colour = (164, 83, 38)           # colour of tiles when not touching mouse
+touching_mouse_tile_colour = (204, 124, 38)  # colour of tiles when touching mouse
 
 while True:
     """main game loop"""
@@ -72,11 +68,7 @@ while True:
                 sys.exit()
 
     # displays the background for the field
-    background = pygame.image.load("field.png")
     screen.blit(background, (0, 0))
-
-    normal_tile_colour = (164, 83, 38)
-    touching_mouse_tile_colour = (204, 124, 38)
 
     # creates the tiles of the field
     y = 0
