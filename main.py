@@ -53,9 +53,17 @@ screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
 titlescreen()
 
 # variables for use in game
-background = pygame.image.load("field.png")  # background for game
-normal_tile_colour = (164, 83, 38)           # colour of tiles when not touching mouse
-touching_mouse_tile_colour = (204, 124, 38)  # colour of tiles when touching mouse
+background = pygame.image.load("field.png")       # background for game
+normal_tile_colour = (164, 83, 38)                # colour of tiles when not touching mouse
+touching_mouse_tile_colour = (204, 124, 38)       # colour of tiles when touching mouse
+inhand = 0                                        # what is the user holding (currently just used for seedpack)
+SeedPack = pygame.image.load("CropSeed.png")      # texture for seedpack for generic crop
+SeededTexture = pygame.image.load("Planted.png")  # Texture for tiles with seeds
+seeded = []                                       # whether the tiles have seeds or not
+for looper in range(4):
+    seeded.append([])
+    for looper2 in range(8):
+        seeded[looper].append(0)
 
 while True:
     """main game loop"""
@@ -69,6 +77,9 @@ while True:
 
     # displays the background for the field
     screen.blit(background, (0, 0))
+
+    # gets mouse location
+    (mousex, mousey) = pygame.mouse.get_pos()
 
     # creates the tiles of the field
     y = 0
@@ -86,20 +97,35 @@ while True:
             # tile appearence to display
             tile = pygame.Rect(tilex, tiley, 100, 100)
 
-            # gets mouse location
-            (mousex, mousey) = pygame.mouse.get_pos()
-
             # check if tile is touching mouse, if it is use the brighter colour
             if (tilex < mousex < tilex + 100) and (tiley < mousey < tiley + 100):
                 pygame.draw.rect(screen, touching_mouse_tile_colour, tile)
+                if pygame.mouse.get_pressed()[0] and inhand == 1:
+                    seeded[y][x] = 1
             else:
                 pygame.draw.rect(screen, normal_tile_colour, tile)
+            
+            if seeded[y][x] == 1:
+                screen.blit(SeededTexture, (tilex, tiley))
 
             # next iteration of inner loop
             x += 1
         
         # next iteration of outer loop
         y += 1
+    
+    # user equip seedpack
+    if pygame.mouse.get_pressed()[0] and (50 < mousex < 50 + 107) and (500 < mousey < 500 + 135):
+        if inhand == 1:
+            inhand = 0
+        else:
+            inhand = 1
+
+    # seedpack placement
+    if inhand == 1:
+        screen.blit(SeedPack, (mousex, mousey))
+    else:
+        screen.blit(SeedPack, (50, 500))
 
     # updates the display and a small delay so that the game mechanics dont go so fast
     pygame.display.update()
