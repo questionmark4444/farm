@@ -63,7 +63,7 @@ seeded = []                                       # whether the tiles have seeds
 for looper in range(4):
     seeded.append([])
     for looper2 in range(8):
-        seeded[looper].append(0)
+        seeded[looper].append(0)                  # adding individually because multiplication causes the collums to be syncronised
 
 while True:
     """main game loop"""
