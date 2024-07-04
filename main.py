@@ -53,17 +53,21 @@ screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
 titlescreen()
 
 # variables for use in game
-background = pygame.image.load("field.png")       # background for game
-normal_tile_colour = (164, 83, 38)                # colour of tiles when not touching mouse
-touching_mouse_tile_colour = (204, 124, 38)       # colour of tiles when touching mouse
-inhand = 0                                        # what is the user holding (currently just used for seedpack)
-SeedPack = pygame.image.load("CropSeed.png")      # texture for seedpack for generic crop
-SeededTexture = pygame.image.load("Planted.png")  # Texture for tiles with seeds
-seeded = []                                       # whether the tiles have seeds or not
+background = pygame.image.load("field.png")             # background for game
+normal_tile_colour = (164, 83, 38)                      # colour of tiles when not touching mouse
+touching_mouse_tile_colour = (204, 124, 38)             # colour of tiles when touching mouse
+inhand = 0                                              # what is the user holding (currently just used for seedpack)
+SeedPack = pygame.image.load("CropSeed.png")            # texture for seedpack for generic crop
+SeededTexture = pygame.image.load("Planted.png")        # Texture for tiles with seeds
+WateringCan = pygame.image.load("WateringCan.png")      # texture for watering can
+WateredSeededTexture = pygame.image.load("WateredSeeds.png")   # Texture for tiles with watered seeds
+
+seeded = []                                             # whether the tiles have seeds or not
 for looper in range(4):
-    seeded.append([])
+    seeded.append([])                                   # adding individually because multiplication causes the collums to be syncronised
     for looper2 in range(8):
-        seeded[looper].append(0)                  # adding individually because multiplication causes the collums to be syncronised
+        seeded[looper].append(0)                        # state of growth
+        seeded[looper].append(0)                        # timer
 
 while True:
     """main game loop"""
@@ -100,13 +104,21 @@ while True:
             # check if tile is touching mouse, if it is use the brighter colour
             if (tilex < mousex < tilex + 100) and (tiley < mousey < tiley + 100):
                 pygame.draw.rect(screen, touching_mouse_tile_colour, tile)
-                if pygame.mouse.get_pressed()[0] and inhand == 1:
-                    seeded[y][x] = 1
+                if pygame.mouse.get_pressed()[0] and inhand == 1 and seeded[y][2 * x] == 0:
+                    seeded[y][2 * x] = 1 # using 2 multiplied by x since the tiles are now 2 values with the odd numbered list parts being timers
+                if pygame.mouse.get_pressed()[0] and inhand == 2 and seeded[y][2 * x] == 1:
+                    seeded[y][2 * x] = 2
+                    seeded[y][2 * x + 1] = time.time()
             else:
                 pygame.draw.rect(screen, normal_tile_colour, tile)
             
-            if seeded[y][x] == 1:
+            if seeded[y][2 * x] == 1:
                 screen.blit(SeededTexture, (tilex, tiley))
+
+            if seeded[y][2 * x] == 2:
+                screen.blit(WateredSeededTexture, (tilex, tiley))
+                if time.time() - seeded[y][2 * x + 1] > 60:
+                    seeded[y][2 * x] = 1
 
             # next iteration of inner loop
             x += 1
@@ -115,8 +127,8 @@ while True:
         y += 1
     
     # user equip seedpack
-    if pygame.mouse.get_pressed()[0] and (50 < mousex < 50 + 107) and (500 < mousey < 500 + 135):
-        if inhand == 1:
+    if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (500 < mousey < 635):
+        if inhand != 0:
             inhand = 0
         else:
             inhand = 1
@@ -126,6 +138,19 @@ while True:
         screen.blit(SeedPack, (mousex, mousey))
     else:
         screen.blit(SeedPack, (50, 500))
+    
+    # user equip watering can
+    if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (660 < mousey < 795):
+        if inhand != 0:
+            inhand = 0
+        else:
+            inhand = 2
+
+    # watering can placement
+    if inhand == 2:
+        screen.blit(WateringCan, (mousex, mousey))
+    else:
+        screen.blit(WateringCan, (50, 660))
 
     # updates the display and a small delay so that the game mechanics dont go so fast
     pygame.display.update()
