@@ -78,6 +78,8 @@ while True:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q:
                 sys.exit()
+            if event.key == pygame.K_p:
+                pygame.image.save(screen, "screenshot.png")
 
     # displays the background for the field
     screen.blit(background, (0, 0))
