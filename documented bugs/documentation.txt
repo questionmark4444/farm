@@ -1,0 +1,11 @@
+The first bug was from developing the timer for tiles drying
+initally I was trying to make the x variable double every time
+however I had tried to account for a displacement which didnt exist
+
+The second bug is similar to the first
+ironically after i reverted the change and did a few more changes the displacement which was not there before was now there
+after this i decided to just revert the changes and just use 2 * x and 2 * x + 1 which is still in the current code
+
+The third bug was simply caused by me forgeting to crop and resize the texture for watered seedlings
+
+The fourth bug was like the previous instance but for fully grown crops
