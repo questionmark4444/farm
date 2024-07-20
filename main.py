@@ -41,6 +41,7 @@ import pygame
 
 # starts pygame modules
 pygame.init()
+
 # starts playing the background music
 pygame.mixer.music.load("music.mp3")
 pygame.mixer.music.play(-1, 0.0)
@@ -53,31 +54,35 @@ screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
 titlescreen()
 
 # variables for use in game
-background = pygame.image.load("field.png")             # background for game
-normal_tile_colour = (164, 83, 38)                      # colour of tiles when not touching mouse
-touching_mouse_tile_colour = (204, 124, 38)             # colour of tiles when touching mouse
-inhand = 0                                              # what is the user holding (currently just used for seedpack)
-SeedPack = pygame.image.load("CropSeed.png")            # texture for seedpack for generic crop
-SeededTexture = pygame.image.load("Planted.png")        # Texture for tiles with seeds
-WateringCan = pygame.image.load("WateringCan.png")      # texture for watering can
-WateredSeededTexture = pygame.image.load("WateredSeeds.png")   # Texture for tiles with watered seeds
+background = pygame.image.load("field.png")                        # background for game
+normal_tile_colour = (164, 83, 38)                                 # colour of tiles when not touching mouse
+touching_mouse_tile_colour = (204, 124, 38)                        # colour of tiles when touching mouse
+inhand = 0                                                         # what is the user holding (currently just used for seedpack)
+SeedPack = pygame.image.load("CropSeed.png")                       # texture for seedpack for generic crop
+SeededTexture = pygame.image.load("Planted.png")                   # Texture for tiles with seeds
+WateringCan = pygame.image.load("WateringCan.png")                 # texture for watering can
+WateredSeededTexture = pygame.image.load("WateredSeeds.png")       # Texture for tiles with watered seeds
+SeedlingTexture = pygame.image.load("seedlings.png")               # Texture for tiles with seedlings
+WateredSeedlingTexture = pygame.image.load("WateredSeedlings.png") # Texture for tiles with watered seedlings
+FullyGrownTexture = pygame.image.load("FullyGrown.png")            # Texture for tiles with fully grown crops
 
-seeded = []                                             # whether the tiles have seeds or not
+seeded = []                                                        # whether the tiles have seeds or not
 for looper in range(4):
-    seeded.append([])                                   # adding individually because multiplication causes the collums to be syncronised
+    seeded.append([])                                              # adding individually because multiplication causes the collums to be syncronised
     for looper2 in range(8):
-        seeded[looper].append(0)                        # state of growth
-        seeded[looper].append(0)                        # timer
+        seeded[looper].append(0)                                   # state of growth
+        seeded[looper].append(0)                                   # timer
 
 while True:
     """main game loop"""
 
-    # checks if the user has pressed q
     events = pygame.event.get()
     for event in events:
         if event.type == pygame.KEYDOWN:
+            # checks if the user has pressed q and exits the game if they did
             if event.key == pygame.K_q:
                 sys.exit()
+            # checks if the user has pressed p and screenshots if they did
             if event.key == pygame.K_p:
                 pygame.image.save(screen, "screenshot.png")
 
@@ -105,22 +110,71 @@ while True:
 
             # check if tile is touching mouse, if it is use the brighter colour
             if (tilex < mousex < tilex + 100) and (tiley < mousey < tiley + 100):
+                # display tile as brighter colour to signify that the game recognizes that the mouse is touching it
                 pygame.draw.rect(screen, touching_mouse_tile_colour, tile)
-                if pygame.mouse.get_pressed()[0] and inhand == 1 and seeded[y][2 * x] == 0:
-                    seeded[y][2 * x] = 1 # using 2 multiplied by x since the tiles are now 2 values with the odd numbered list parts being timers
-                if pygame.mouse.get_pressed()[0] and inhand == 2 and seeded[y][2 * x] == 1:
-                    seeded[y][2 * x] = 2
-                    seeded[y][2 * x + 1] = time.time()
-            else:
-                pygame.draw.rect(screen, normal_tile_colour, tile)
-            
-            if seeded[y][2 * x] == 1:
-                screen.blit(SeededTexture, (tilex, tiley))
 
+                # using 2 multiplied by x since the tiles are now 2 values with the odd numbered list parts being timers
+                # plant seeds
+                if pygame.mouse.get_pressed()[0] and inhand == 1 and seeded[y][2 * x] == 0:
+                    seeded[y][2 * x] = 1
+                # triggered by clicking a tile with a watering can
+                if pygame.mouse.get_pressed()[0] and inhand == 2:
+                    # water seeds and start timer
+                    if seeded[y][2 * x] == 1:
+                        seeded[y][2 * x] = 2
+                        seeded[y][2 * x + 1] = time.time()
+                    # water seedlings and start timer
+                    if seeded[y][2 * x] == 3:
+                        seeded[y][2 * x] = 4
+                        seeded[y][2 * x + 1] = time.time()
+            else:
+                # display normal tile colour
+                pygame.draw.rect(screen, normal_tile_colour, tile)
+
+            # if the tile has seeds
+            if seeded[y][2 * x] == 1:
+                # display the seeds' texture
+                screen.blit(SeededTexture, (tilex, tiley))
+                # if the timer is not 0 meaning it was watered
+                if seeded[y][2 * x + 1] != 0:
+                    # if it has been 2 minutes since it became less wet convert it to seedling
+                    if time.time() - seeded[y][2 * x + 1] > 120:
+                        seeded[y][2 * x] = 3
+                        seeded[y][2 * x + 1] = 0
+
+            # if the tile has watered seeds
             if seeded[y][2 * x] == 2:
+                # display the watered seeds' texture
                 screen.blit(WateredSeededTexture, (tilex, tiley))
+                # if it has been at least a minute since it has been watered then convert it back to unwatered seeds but with timer for growth
                 if time.time() - seeded[y][2 * x + 1] > 60:
                     seeded[y][2 * x] = 1
+                    seeded[y][2 * x + 1] = time.time()
+
+            # if the tile has seedlings
+            if seeded[y][2 * x] == 3:
+                # display the seedlings' texture
+                screen.blit(SeedlingTexture, (tilex, tiley))
+                # if the timer is not 0 meaning it was watered
+                if seeded[y][2 * x + 1] != 0:
+                    # if it has been 2 minutes since it became less wet convert it to fully grown crop
+                    if time.time() - seeded[y][2 * x + 1] > 120:
+                        seeded[y][2 * x] = 5
+                        seeded[y][2 * x + 1] = 0
+
+            # if the tile has watered seedlings
+            if seeded[y][2 * x] == 4:
+                # display the watered seedlings' texture
+                screen.blit(WateredSeedlingTexture, (tilex, tiley))
+                # if it has been at least a minute since it has been watered then convert it back to unwatered seedlings but with timer for growth
+                if time.time() - seeded[y][2 * x + 1] > 60:
+                    seeded[y][2 * x] = 3
+                    seeded[y][2 * x + 1] = time.time()
+
+            # if the tile has fully grown crops
+            if seeded[y][2 * x] == 5:
+                # display the fully grown crops' texture
+                screen.blit(FullyGrownTexture, (tilex, tiley))
 
             # next iteration of inner loop
             x += 1
@@ -128,19 +182,22 @@ while True:
         # next iteration of outer loop
         y += 1
     
-    # user equip seedpack
+    # check if user was clicking on the seedpack
     if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (500 < mousey < 635):
+        # check if the user was already holding an item and put it away otherwise equip the seedpack
         if inhand != 0:
             inhand = 0
         else:
             inhand = 1
 
-    # seedpack placement
+    # check if the user is holding the seedpack
     if inhand == 1:
+        # put it where the mouse it
         screen.blit(SeedPack, (mousex, mousey))
     else:
+        # put the seedpack in its place in the toolbar
         screen.blit(SeedPack, (50, 500))
-    
+
     # user equip watering can
     if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (660 < mousey < 795):
         if inhand != 0:
@@ -148,10 +205,12 @@ while True:
         else:
             inhand = 2
 
-    # watering can placement
+    # check if the user is holding the watering can
     if inhand == 2:
+        # put it where the mouse it
         screen.blit(WateringCan, (mousex, mousey))
     else:
+        # put the seedpack in its place in the toolbar
         screen.blit(WateringCan, (50, 660))
 
     # updates the display and a small delay so that the game mechanics dont go so fast
