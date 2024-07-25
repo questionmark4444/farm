@@ -58,6 +58,7 @@ background = pygame.image.load("field.png")                        # background 
 normal_tile_colour = (164, 83, 38)                                 # colour of tiles when not touching mouse
 touching_mouse_tile_colour = (204, 124, 38)                        # colour of tiles when touching mouse
 inhand = 0                                                         # what is the user holding (currently just used for seedpack)
+crop = 0                                                           # amount of crop harvested
 SeedPack = pygame.image.load("CropSeed.png")                       # texture for seedpack for generic crop
 SeededTexture = pygame.image.load("Planted.png")                   # Texture for tiles with seeds
 WateringCan = pygame.image.load("WateringCan.png")                 # texture for watering can
@@ -65,6 +66,7 @@ WateredSeededTexture = pygame.image.load("WateredSeeds.png")       # Texture for
 SeedlingTexture = pygame.image.load("seedlings.png")               # Texture for tiles with seedlings
 WateredSeedlingTexture = pygame.image.load("WateredSeedlings.png") # Texture for tiles with watered seedlings
 FullyGrownTexture = pygame.image.load("FullyGrown.png")            # Texture for tiles with fully grown crops
+Scyth = pygame.image.load("scyth.png")                             # Texture for scyth
 
 seeded = []                                                        # whether the tiles have seeds or not
 for looper in range(4):
@@ -72,6 +74,11 @@ for looper in range(4):
     for looper2 in range(8):
         seeded[looper].append(0)                                   # state of growth
         seeded[looper].append(0)                                   # timer
+
+font = pygame.font.Font('freesansbold.ttf', 32)                    # font for harvest text
+text = font.render(f'amount of crop: {crop}', True, (0, 255, 0))   # this is for setting up textRect it will be changed later
+textRect = text.get_rect()                                         # this is the text box
+textRect.center = (150, 20)                                        # set textbox location
 
 while True:
     """main game loop"""
@@ -127,6 +134,10 @@ while True:
                     if seeded[y][2 * x] == 3:
                         seeded[y][2 * x] = 4
                         seeded[y][2 * x + 1] = time.time()
+                # harvest fully grown crop with scyth
+                if pygame.mouse.get_pressed()[0] and inhand == 3 and seeded[y][2 * x] == 5:
+                    seeded[y][2 * x] = 0
+                    crop += 10
             else:
                 # display normal tile colour
                 pygame.draw.rect(screen, normal_tile_colour, tile)
@@ -182,7 +193,7 @@ while True:
         # next iteration of outer loop
         y += 1
     
-    # check if user was clicking on the seedpack
+    # user equip seedpack
     if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (500 < mousey < 635):
         # check if the user was already holding an item and put it away otherwise equip the seedpack
         if inhand != 0:
@@ -200,6 +211,7 @@ while True:
 
     # user equip watering can
     if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (660 < mousey < 795):
+        # check if the user was already holding an item and put it away otherwise equip the watering can
         if inhand != 0:
             inhand = 0
         else:
@@ -210,8 +222,29 @@ while True:
         # put it where the mouse it
         screen.blit(WateringCan, (mousex, mousey))
     else:
-        # put the seedpack in its place in the toolbar
+        # put the watering can in its place in the toolbar
         screen.blit(WateringCan, (50, 660))
+
+    # user equip scyth
+    if pygame.mouse.get_pressed()[0] and (50 < mousex < 157) and (820 < mousey < 795 * 2 + 635):
+        # check if the user was already holding an item and put it away otherwise equip the scyth
+        if inhand != 0:
+            inhand = 0
+        else:
+            inhand = 3
+
+    # check if the user is holding the scyth
+    if inhand == 3:
+        # put it where the mouse it
+        screen.blit(Scyth, (mousex, mousey))
+    else:
+        # put the scyth in its place in the toolbar
+        screen.blit(Scyth, (50, 820))
+
+    # this updates the text for any harvested crops
+    text = font.render(f'amount of crop: {crop}', True, (0, 100, 0))
+    # this uses the inital textbox for the new text
+    screen.blit(text, textRect)
 
     # updates the display and a small delay so that the game mechanics dont go so fast
     pygame.display.update()
