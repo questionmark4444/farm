@@ -1,6 +1,9 @@
 def titlescreen():
     """ this is for the user to prepare for the game after the user gives the input enter to continue or q to exit """
 
+    # frames of recording
+    image_frames = []
+
     # texture for background of titlescreen
     background = pygame.image.load("titlescreen.png")
 
@@ -20,7 +23,7 @@ def titlescreen():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     # this closes the game
-                    sys.exit()
+                    exit_game(image_frames)
                 if event.key == pygame.K_RETURN:
                     # this exits the loop after this iteration is complete
                     waiting = False
@@ -30,14 +33,71 @@ def titlescreen():
         screen.blit(text, textbox)
         pygame.display.update()
 
+        pygame.image.save(screen, "screenshot.png")
+        image_frames.append(cv2.imread("screenshot.png"))
+
         # simple delay that likely wont bother users when they choose what to do
         time.sleep(1)
 
+    # return the beginning of the recording which was on the titlescreen
+    return image_frames
+
+# exits the game, i made this a separate function because of the complexity the recorder adds
+def exit_game(image_frames):
+    # length of final video
+    video_length = len(image_frames)/5
+    # convert images into 5 frame per second video
+    images_to_video(image_frames, "merge.mp4", 5)
+    # add background music to video
+    combine_audio("merge.mp4", "music.mp3", "uncut.mp4", 5)
+    # the music is longer than the current test so it extends the last frame, \
+    # this trims the video to soundless length to fix that
+    # unfortunately if the recording is longer than the music it will not loop
+    # i will fix this later in the other tests
+    cutter("uncut.mp4", 0, video_length, targetname="recording.mp4")
+    # deletes intermidiate processing files
+    os.remove("screenshot.png")
+    os.remove("merge.mp4")
+    os.remove("uncut.mp4")
+    # exits
+    sys.exit()
+
+def images_to_video(image_list, output_path, fps):
+    """this converts the images into a video for recording"""
+
+    # Read the first image to get dimensions
+    first_image = image_list[0]
+    height, width, layers = first_image.shape
+
+    # Create a video writer object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # default mp4 codec doesnt work
+    video = cv2.VideoWriter(output_path,      # output path
+                        fourcc,           # codec
+                        fps,              # frames per second
+                        (width, height))  # width and height of video and game
+
+    # Write each image as a frame
+    for image in image_list:
+        video.write(image)
+
+    # Release the video writer
+    video.release()
+
+def combine_audio(video_name, audio_name, output_name, fps):
+    """combine video with audio"""
+    video = media_getter.VideoFileClip(video_name)
+    audio = media_getter.AudioFileClip(audio_name)
+    final_video = video.set_audio(audio)
+    final_video.write_videofile(output_name,fps=fps)
 
 # imports libraries
 import sys
 import time
 import pygame
+import cv2
+import os
+import moviepy.editor as media_getter
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip as cutter
 
 # starts pygame modules
 pygame.init()
@@ -50,8 +110,8 @@ pygame.mixer.music.play(-1, 0.0)
 global screen
 screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
 
-# displays the game's titlescreen
-titlescreen()
+# displays the game's titlescreen and gets image frames
+image_frames = titlescreen()
 
 # variables for use in game
 background = pygame.image.load("field.png")                        # background for game
@@ -88,7 +148,7 @@ while True:
         if event.type == pygame.KEYDOWN:
             # checks if the user has pressed q and exits the game if they did
             if event.key == pygame.K_q:
-                sys.exit()
+                exit_game(image_frames)
             # checks if the user has pressed p and screenshots if they did
             if event.key == pygame.K_p:
                 pygame.image.save(screen, "screenshot.png")
@@ -245,6 +305,12 @@ while True:
     text = font.render(f'amount of crop: {crop}', True, (0, 100, 0))
     # this uses the inital textbox for the new text
     screen.blit(text, textRect)
+
+    # takes screenshot then adds data to list of video frames
+    # this will use up alot of ram if the recording is long
+    # I will try to fix that later on
+    pygame.image.save(screen, "screenshot.png")
+    image_frames.append(cv2.imread("screenshot.png"))
 
     # updates the display and a small delay so that the game mechanics dont go so fast
     pygame.display.update()
