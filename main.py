@@ -1,8 +1,8 @@
 def titlescreen():
     """ this is for the user to prepare for the game after the user gives the input enter to continue or q to exit """
 
-    # frames of recording
-    image_frames = []
+    # amount of frames in the recording
+    image_frames = 0
 
     # texture for background of titlescreen
     background = pygame.image.load("titlescreen.png")
@@ -14,6 +14,9 @@ def titlescreen():
     textbox = text.get_rect()
     textbox.center = (500, 500)
 
+    # create screenshots folder
+    os.makedirs("./recording")
+    
     # loop waiting for the user to press enter or q
     waiting = True
     while waiting:
@@ -33,8 +36,13 @@ def titlescreen():
         screen.blit(text, textbox)
         pygame.display.update()
 
-        pygame.image.save(screen, "screenshot.png")
-        image_frames.append(cv2.imread("screenshot.png"))
+        # takes frame then saves to folder to use less ram
+        image_frames += 1
+        pygame.image.save(screen, f"recording/frame{image_frames}.png")
+        # for resizing frames that are not 1000 by 1000
+        resize_image = pygame.image.load(f"recording/frame{image_frames}.png")
+        resize_image = pygame.transform.scale(resize_image, (1000, 1000))
+        pygame.image.save(resize_image, f"recording/frame{image_frames}.png")
 
         # simple delay that likely wont bother users when they choose what to do
         time.sleep(1)
@@ -45,43 +53,39 @@ def titlescreen():
 # exits the game, i made this a separate function because of the complexity the recorder adds
 def exit_game(image_frames):
     # length of final video
-    video_length = len(image_frames)/5
-    # convert images into 5 frame per second video
-    images_to_video(image_frames, "merge.mp4", 5)
+    video_length = image_frames/5
+    # create list of file paths of each frame
+    image_path = []
+    frame = 1
+    while frame <= image_frames:
+        image_path.append(f"recording/frame{frame}.png")
+        frame += 1
+    # convert frames into 5 frame per second video
+    images_to_video(image_path, "merge.mp4", 5)
     # add background music to video
     combine_audio("merge.mp4", "music.mp3", "uncut.mp4", 5)
-    # the music is longer than the current test so it extends the last frame, \
+    # when the music is longer than the recording it extends the last frame, 
     # this trims the video to soundless length to fix that
     # unfortunately if the recording is longer than the music it will not loop
     # i will fix this later in the other tests
     cutter("uncut.mp4", 0, video_length, targetname="recording.mp4")
     # deletes intermidiate processing files
-    os.remove("screenshot.png")
     os.remove("merge.mp4")
     os.remove("uncut.mp4")
+    for path in image_path:
+        os.remove(path)
+    os.rmdir("recording")
     # exits
     sys.exit()
 
-def images_to_video(image_list, output_path, fps):
-    """this converts the images into a video for recording"""
+def images_to_video(frame_paths, output_path, fps):
+    """this converts the frames into a video for recording"""
 
-    # Read the first image to get dimensions
-    first_image = image_list[0]
-    height, width, layers = first_image.shape
+    # Create the video from the paths
+    video = video_converter.ImageSequenceClip(frame_paths, fps=fps)
 
-    # Create a video writer object
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # default mp4 codec doesnt work
-    video = cv2.VideoWriter(output_path,      # output path
-                        fourcc,           # codec
-                        fps,              # frames per second
-                        (width, height))  # width and height of video and game
-
-    # Write each image as a frame
-    for image in image_list:
-        video.write(image)
-
-    # Release the video writer
-    video.release()
+    # output the video
+    video.write_videofile(output_path)
 
 def combine_audio(video_name, audio_name, output_name, fps):
     """combine video with audio"""
@@ -98,6 +102,7 @@ import cv2
 import os
 import moviepy.editor as media_getter
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip as cutter
+import moviepy.video.io.ImageSequenceClip as video_converter
 
 # starts pygame modules
 pygame.init()
@@ -306,11 +311,13 @@ while True:
     # this uses the inital textbox for the new text
     screen.blit(text, textRect)
 
-    # takes screenshot then adds data to list of video frames
-    # this will use up alot of ram if the recording is long
-    # I will try to fix that later on
-    pygame.image.save(screen, "screenshot.png")
-    image_frames.append(cv2.imread("screenshot.png"))
+    # takes frame then saves to folder to use less ram
+    image_frames += 1
+    pygame.image.save(screen, f"recording/frame{image_frames}.png")
+    # for resizing frames that are not 1000 by 1000
+    resize_image = pygame.image.load(f"recording/frame{image_frames}.png")
+    resize_image = pygame.transform.scale(resize_image, (1000, 1000))
+    pygame.image.save(resize_image, f"recording/frame{image_frames}.png")
 
     # updates the display and a small delay so that the game mechanics dont go so fast
     pygame.display.update()
