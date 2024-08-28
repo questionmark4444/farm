@@ -60,18 +60,19 @@ def exit_game(image_frames):
     while frame <= image_frames:
         image_path.append(f"recording/frame{frame}.png")
         frame += 1
-    # convert frames into 5 frame per second video
-    images_to_video(image_path, "merge.mp4", 5)
-    # add background music to video
-    combine_audio("merge.mp4", "music.mp3", "uncut.mp4", 5)
-    # when the music is longer than the recording it extends the last frame, 
-    # this trims the video to soundless length to fix that
-    # unfortunately if the recording is longer than the music it will not loop
-    # i will fix this later in the other tests
-    cutter("uncut.mp4", 0, video_length, targetname="recording.mp4")
+    # compile frames into 5 frame per second video
+    images_to_video(image_path, "frame_compilation.mp4", 5)
+    # create loop of 120 second long music.mp3 that lasts the whole video length
+    loop_music("music.mp3", 120, "looped_music.mp3", video_length)
+    # add looped background music to video
+    combine_audio("frame_compilation.mp4", "looped_music.mp3", "with_sound.mp4", 5)
+    # when the looped music is longer than the recording it extends the last frame, 
+    # this trims the video to the soundless length to fix that
+    cutter("with_sound.mp4", 0, video_length, targetname="recording.mp4")
     # deletes intermidiate processing files
-    os.remove("merge.mp4")
-    os.remove("uncut.mp4")
+    os.remove("frame_compilation.mp4")
+    os.remove("with_sound.mp4")
+    os.remove("looped_music.mp3")
     for path in image_path:
         os.remove(path)
     os.rmdir("recording")
@@ -86,6 +87,23 @@ def images_to_video(frame_paths, output_path, fps):
 
     # output the video
     video.write_videofile(output_path)
+
+def loop_music(original_audio_file, original_audio_length, looped_output_filename, video_length):
+    """ create loop of background music to merge with the compilation of all frames """
+    # since it is initialised as a normal copy of the audio it already is its length
+    audio_length = original_audio_length
+    # orginal unaltered audio
+    sound_original = AudioSegment.from_mp3(original_audio_file)
+    # base for looping the audio
+    sound_loop = AudioSegment.from_mp3(original_audio_file)
+    # the extra audio will be cut so the loop can exceed the video length
+    while audio_length < video_length:
+        # add a copy of the original audio to the end of sound_loop
+        sound_loop = sound_loop.append(sound_original,crossfade=1500)
+        # add length of music.mp3 in seconds
+        audio_length += original_audio_length
+    # export loop
+    sound_loop.export(looped_output_filename,format="mp3")
 
 def combine_audio(video_name, audio_name, output_name, fps):
     """combine video with audio"""
@@ -103,6 +121,7 @@ import os
 import moviepy.editor as media_getter
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip as cutter
 import moviepy.video.io.ImageSequenceClip as video_converter
+from pydub import AudioSegment
 
 # starts pygame modules
 pygame.init()
