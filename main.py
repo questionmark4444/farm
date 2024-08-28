@@ -373,6 +373,7 @@ while True:
         screen.blit(text, textRect)
 
     # takes frame then saves to folder to use less ram
+    # turns out this also works for inventory and I assumed it did not
     image_frames += 1
     pygame.image.save(screen, f"recording/frame{image_frames}.png")
     # for resizing frames that are not 1000 by 1000
