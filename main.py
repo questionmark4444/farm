@@ -1,6 +1,9 @@
 def titlescreen():
     """ this is for the user to prepare for the game after the user gives the input enter to continue or q to exit """
 
+    # amount of frames in the recording
+    image_frames = 0
+
     # texture for background of titlescreen
     background = pygame.image.load("titlescreen.png")
 
@@ -11,6 +14,9 @@ def titlescreen():
     textbox = text.get_rect()
     textbox.center = (500, 500)
 
+    # create screenshots folder
+    os.makedirs("./recording")
+
     # loop waiting for the user to press enter or q
     waiting = True
     while waiting:
@@ -20,7 +26,7 @@ def titlescreen():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     # this closes the game
-                    sys.exit()
+                    exit_game(image_frames)
                 if event.key == pygame.K_RETURN:
                     # this exits the loop after this iteration is complete
                     waiting = False
@@ -30,14 +36,92 @@ def titlescreen():
         screen.blit(text, textbox)
         pygame.display.update()
 
+        # takes frame then saves to folder to use less ram
+        image_frames += 1
+        pygame.image.save(screen, f"recording/frame{image_frames}.png")
+        # for resizing frames that are not 1000 by 1000
+        resize_image = pygame.image.load(f"recording/frame{image_frames}.png")
+        resize_image = pygame.transform.scale(resize_image, (1000, 1000))
+        pygame.image.save(resize_image, f"recording/frame{image_frames}.png")
+
         # simple delay that likely wont bother users when they choose what to do
         time.sleep(1)
 
+    # return the beginning of the recording which was on the titlescreen
+    return image_frames
+
+# exits the game, i made this a separate function because of the complexity the recorder adds
+def exit_game(image_frames):
+    # length of final video
+    video_length = image_frames/5
+    # create list of file paths of each frame
+    image_path = []
+    frame = 1
+    while frame <= image_frames:
+        image_path.append(f"recording/frame{frame}.png")
+        frame += 1
+    # compile frames into 5 frame per second video
+    images_to_video(image_path, "frame_compilation.mp4", 5)
+    # create loop of 120 second long music.mp3 that lasts the whole video length
+    loop_music("music.mp3", 120, "looped_music.mp3", video_length)
+    # add looped background music to video
+    combine_audio("frame_compilation.mp4", "looped_music.mp3", "with_sound.mp4", 5)
+    # when the looped music is longer than the recording it extends the last frame, 
+    # this trims the video to the soundless length to fix that
+    cutter("with_sound.mp4", 0, video_length, targetname="recording.mp4")
+    # deletes intermidiate processing files
+    os.remove("frame_compilation.mp4")
+    os.remove("with_sound.mp4")
+    os.remove("looped_music.mp3")
+    for path in image_path:
+        os.remove(path)
+    os.rmdir("recording")
+    # exits
+    sys.exit()
+
+def images_to_video(frame_paths, output_path, fps):
+    """this converts the frames into a video for recording"""
+
+    # Create the video from the paths
+    video = video_converter.ImageSequenceClip(frame_paths, fps=fps)
+
+    # output the video
+    video.write_videofile(output_path)
+
+def loop_music(original_audio_file, original_audio_length, looped_output_filename, video_length):
+    """ create loop of background music to merge with the compilation of all frames """
+    # since it is initialised as a normal copy of the audio it already is its length
+    audio_length = original_audio_length
+    # orginal unaltered audio
+    sound_original = AudioSegment.from_mp3(original_audio_file)
+    # base for looping the audio
+    sound_loop = AudioSegment.from_mp3(original_audio_file)
+    # the extra audio will be cut so the loop can exceed the video length
+    while audio_length < video_length:
+        # add a copy of the original audio to the end of sound_loop
+        sound_loop = sound_loop.append(sound_original,crossfade=1500)
+        # add length of music.mp3 in seconds
+        audio_length += original_audio_length
+    # export loop
+    sound_loop.export(looped_output_filename,format="mp3")
+
+def combine_audio(video_name, audio_name, output_name, fps):
+    """combine video with audio"""
+    video = media_getter.VideoFileClip(video_name)
+    audio = media_getter.AudioFileClip(audio_name)
+    final_video = video.set_audio(audio)
+    final_video.write_videofile(output_name,fps=fps)
 
 # imports libraries
 import sys
 import time
 import pygame
+import cv2
+import os
+import moviepy.editor as media_getter
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip as cutter
+import moviepy.video.io.ImageSequenceClip as video_converter
+from pydub import AudioSegment
 
 # starts pygame modules
 pygame.init()
@@ -50,8 +134,8 @@ pygame.mixer.music.play(-1, 0.0)
 global screen
 screen = pygame.display.set_mode((1000, 1000), pygame.FULLSCREEN)
 
-# displays the game's titlescreen
-titlescreen()
+# displays the game's titlescreen and gets image frames
+image_frames = titlescreen()
 
 # variables for use in game
 background = pygame.image.load("field.png")                        # background for game
@@ -98,7 +182,7 @@ while True:
         if event.type == pygame.KEYDOWN:
             # checks if the user has pressed q and exits the game if they did
             if event.key == pygame.K_q:
-                sys.exit()
+                exit_game(image_frames)
             # checks if the user has pressed p and screenshots if they did
             if event.key == pygame.K_p:
                 pygame.image.save(screen, "screenshot.png")
@@ -287,6 +371,14 @@ while True:
         text = font.render(f'amount of crop: {items["crop"]}', True, (0, 100, 0))
         # this uses the inital textbox for the new text
         screen.blit(text, textRect)
+
+    # takes frame then saves to folder to use less ram
+    image_frames += 1
+    pygame.image.save(screen, f"recording/frame{image_frames}.png")
+    # for resizing frames that are not 1000 by 1000
+    resize_image = pygame.image.load(f"recording/frame{image_frames}.png")
+    resize_image = pygame.transform.scale(resize_image, (1000, 1000))
+    pygame.image.save(resize_image, f"recording/frame{image_frames}.png")
 
     # updates the display and a small delay so that the game mechanics dont go so fast
     pygame.display.update()
